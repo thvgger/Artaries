@@ -122,6 +122,39 @@ export default function ReceiptForm({ data, onChange }: ReceiptFormProps) {
                 </div>
 
                 <div className={styles.qtyRateGroup}>
+                  <div
+                    className="form-group"
+                    style={{ marginBottom: 0, flex: 1 }}
+                  >
+                    <label className="form-label">S/N (Optional)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Serial Number"
+                      value={item.sn || ""}
+                      onChange={(e) =>
+                        handleItemChange(item.id, "sn", e.target.value)
+                      }
+                    />
+                  </div>
+                  <div
+                    className="form-group"
+                    style={{ marginBottom: 0, flex: 1 }}
+                  >
+                    <label className="form-label">IMEI (Optional)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="IMEI Number"
+                      value={item.imei || ""}
+                      onChange={(e) =>
+                        handleItemChange(item.id, "imei", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.qtyRateGroup}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Qty</label>
                     <input
@@ -145,14 +178,15 @@ export default function ReceiptForm({ data, onChange }: ReceiptFormProps) {
                       type="number"
                       className="form-input"
                       min="0"
-                      value={item.rate}
-                      onChange={(e) =>
+                      value={item.rate === 0 ? "" : item.rate}
+                      onChange={(e) => {
+                        const val = e.target.value;
                         handleItemChange(
                           item.id,
                           "rate",
-                          parseInt(e.target.value) || 0,
-                        )
-                      }
+                          val === "" ? 0 : parseInt(val) || 0,
+                        );
+                      }}
                     />
                   </div>
                 </div>
@@ -167,33 +201,6 @@ export default function ReceiptForm({ data, onChange }: ReceiptFormProps) {
           <button type="button" className={styles.addBtn} onClick={addItem}>
             <PlusCircle size={20} /> Add Another Item
           </button>
-        </div>
-      </div>
-
-      {/* Additional Details Section */}
-      <div className={styles.section} style={{ marginBottom: 0 }}>
-        <h2 className={styles.sectionTitle}>
-          <FileText size={20} /> Additional Details
-        </h2>
-        <div className={styles.grid}>
-          <div className="form-group">
-            <label className="form-label">S/N</label>
-            <input
-              type="text"
-              className="form-input"
-              value={data.sn}
-              onChange={(e) => handleChange("sn", e.target.value)}
-            />
-          </div>
-          <div className="form-group" style={{ gridColumn: "1 / -1" }}>
-            <label className="form-label">IMEI</label>
-            <input
-              type="text"
-              className="form-input"
-              value={data.imei}
-              onChange={(e) => handleChange("imei", e.target.value)}
-            />
-          </div>
         </div>
       </div>
     </div>

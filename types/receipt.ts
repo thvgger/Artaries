@@ -3,6 +3,8 @@ export interface ReceiptItem {
   description: string;
   qty: number;
   rate: number;
+  sn?: string;
+  imei?: string;
 }
 
 export interface ReceiptData {
@@ -10,6 +12,4 @@ export interface ReceiptData {
   phone: string;
   date: string;
   items: ReceiptItem[];
-  sn: string;
-  imei: string;
 }

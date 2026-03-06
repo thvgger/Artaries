@@ -91,6 +91,22 @@ export default function ReceiptPreview({ data }: ReceiptPreviewProps) {
                   <div className={styles.itemDetails}>
                     <div className={styles.itemDesc}>
                       {item.description || "Item Designator"}
+                      {(item.sn || item.imei) && (
+                        <div
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "#64748b",
+                            marginTop: "4px",
+                          }}
+                        >
+                          {item.sn && (
+                            <span style={{ marginRight: "12px" }}>
+                              S/N: {item.sn}
+                            </span>
+                          )}
+                          {item.imei && <span>IMEI: {item.imei}</span>}
+                        </div>
+                      )}
                     </div>
                     <div className={styles.itemMeta}>
                       {item.qty} x ₦{item.rate.toLocaleString()}
@@ -122,24 +138,6 @@ export default function ReceiptPreview({ data }: ReceiptPreviewProps) {
               {calculatedAmountInWords}
             </div>
           </div>
-
-          {/* Device Meta */}
-          {(data.sn || data.imei) && (
-            <div className={styles.deviceMeta}>
-              {data.sn && (
-                <div className={styles.deviceMetaRow}>
-                  <span className={styles.deviceMetaLabel}>Serial Number</span>
-                  <span className={styles.deviceMetaValue}>{data.sn}</span>
-                </div>
-              )}
-              {data.imei && (
-                <div className={styles.deviceMetaRow}>
-                  <span className={styles.deviceMetaLabel}>IMEI</span>
-                  <span className={styles.deviceMetaValue}>{data.imei}</span>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Signatures */}
           <div className={styles.signatures}>

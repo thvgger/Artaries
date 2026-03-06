@@ -13,8 +13,6 @@ const initialData: ReceiptData = {
   phone: "",
   date: new Date().toISOString().split("T")[0], // Today's date natively
   items: [{ id: "1", description: "", qty: 1, rate: 0 }],
-  sn: "",
-  imei: "",
 };
 
 export default function Home() {
