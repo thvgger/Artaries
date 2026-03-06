@@ -42,22 +42,6 @@ export default function Home() {
     }
   }, [data, isClient]);
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Artaries Receipt",
-          text: `Receipt for ${data.name || "Customer"}`,
-          url: window.location.href,
-        });
-      } catch (error) {
-        console.error("Error sharing:", error);
-      }
-    } else {
-      alert("Sharing is not supported on this browser.");
-    }
-  };
-
   const clearForm = () => {
     if (confirm("Are you sure you want to clear the form?")) {
       setData({ ...initialData });
@@ -65,7 +49,7 @@ export default function Home() {
     }
   };
 
-  const handleDownloadPDF = async () => {
+  const handleGenerateReceipt = async () => {
     const element = document.getElementById("receipt-capture-area");
     if (!element) return;
 
@@ -99,11 +83,55 @@ export default function Home() {
         height: element.scrollHeight,
       });
 
-      // Convert canvas to a downloadable PNG link
+      const imgData = canvas.toDataURL("image/png", 1.0);
+      const filename = `ARTARIES_Receipt_${data.name ? data.name.replace(/\s+/g, "_") : "Customer"}.png`;
+
+      // Try the modern standard download first
       const link = document.createElement("a");
-      link.download = `ARTARIES_Receipt_${data.name ? data.name.replace(/\s+/g, "_") : "Customer"}.png`;
-      link.href = canvas.toDataURL("image/png", 1.0);
-      link.click();
+      link.download = filename;
+      link.href = imgData;
+
+      // Some iOS PWA environments block synthetic clicks.
+      // If the download fails silently, we'll try opening it in a new tab.
+      try {
+        link.click();
+      } catch (e) {
+        console.warn("Direct download blocked, attempting new tab open");
+      }
+
+      // Fallback for iOS Safari which aggressively blocks data URI navigation
+      // We detect iOS roughly to provide a better instruction
+      const isIOS =
+        /iPad|iPhone|iPod/.test(navigator.platform) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+      if (isIOS) {
+        // Create a temporary "Long press to save" overlay for iOS
+        const w = window.open("");
+        if (w) {
+          w.document.write(`
+             <html>
+               <head><title>Receipt - Long Press to Save</title></head>
+               <body style="margin:0; background:#f1f5f9; display:flex; flex-direction:column; align-items:center; pt-safe-top: 20px;">
+                 <div style="background:#1e3a5f; color:white; padding:15px; width:100%; text-align:center; font-family:sans-serif; position:sticky; top:0; z-index:10;">
+                   <strong>Long-press the image below and select "Save to Photos"</strong>
+                 </div>
+                 <img src="${imgData}" style="max-width:100%; height:auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top:20px;" />
+               </body>
+             </html>
+           `);
+          w.document.close();
+        } else {
+          // If popup blocker prevents new tab, replace current screen (last resort)
+          document.body.innerHTML = `
+             <div style="background:#1e3a5f; color:white; padding:20px; text-align:center; font-family:sans-serif;">
+                <strong>Long-press the image to Save to Photos</strong><br/>
+                <button onclick="window.location.reload()" style="margin-top:10px; padding:8px 16px; border-radius:8px; border:none; background:white; color:#1e3a5f; font-weight:bold;">Go Back</button>
+             </div>
+             <img src="${imgData}" style="max-width:100%; display:block; margin:auto;" />
+           `;
+        }
+      }
     } catch (error) {
       console.error("Error generating receipt image:", error);
       alert("Failed to generate receipt. Please try again.");
@@ -183,11 +211,17 @@ export default function Home() {
             </div>
 
             <div className={styles.actionFooter}>
-              <button className="btn btn-secondary" onClick={handleDownloadPDF}>
+              <button
+                className="btn btn-secondary"
+                onClick={handleGenerateReceipt}
+              >
                 <Download size={18} style={{ marginRight: "8px" }} />
                 Save Receipt
               </button>
-              <button className="btn btn-primary" onClick={handleShare}>
+              <button
+                className="btn btn-primary"
+                onClick={handleGenerateReceipt}
+              >
                 <Share2 size={18} style={{ marginRight: "8px" }} />
                 Share Receipt
               </button>

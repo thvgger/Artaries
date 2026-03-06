@@ -31,6 +31,15 @@ self.addEventListener("activate", (event) => {
 
 // Fetch event: serve from cache first, fall back to network, then cache the response
 self.addEventListener("fetch", (event) => {
+  // Bypass service worker interception completely for localhost/HTTP development
+  // to avoid iOS "HTTPS-only" navigation errors
+  if (
+    self.location.hostname === "localhost" ||
+    self.location.hostname === "127.0.0.1"
+  ) {
+    return;
+  }
+
   // Skip non-GET requests
   if (event.request.method !== "GET") return;
 
