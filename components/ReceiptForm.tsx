@@ -161,14 +161,15 @@ export default function ReceiptForm({ data, onChange }: ReceiptFormProps) {
                       type="number"
                       className="form-input"
                       min="1"
-                      value={item.qty}
-                      onChange={(e) =>
+                      value={item.qty === 0 ? "" : item.qty}
+                      onChange={(e) => {
+                        const val = e.target.value;
                         handleItemChange(
                           item.id,
                           "qty",
-                          parseInt(e.target.value) || 0,
-                        )
-                      }
+                          val === "" ? 0 : parseInt(val) || 0,
+                        );
+                      }}
                     />
                   </div>
 
