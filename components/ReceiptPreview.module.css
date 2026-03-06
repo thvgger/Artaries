@@ -1,0 +1,315 @@
+.previewWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 1rem;
+  overflow-x: auto;
+  background-color: transparent;
+}
+
+.receiptCard {
+  width: 100%;
+  max-width: 210mm;
+  min-height: 297mm;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-white);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #334155;
+}
+
+/* Header Section */
+.header {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  position: relative;
+}
+
+/* Subtle curve at the bottom of the header */
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background-color: var(--color-primary);
+  border-radius: 0 0 50% 50%;
+  z-index: 1;
+}
+
+.logoArea {
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logoImage {
+  height: 80px;
+  width: auto;
+  margin-bottom: 0.5rem;
+  object-fit: contain;
+}
+
+.companyName {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.motto {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  margin-top: 0.25rem;
+  color: var(--color-secondary);
+}
+
+.contactArea {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  line-height: 1.4;
+  position: relative;
+  z-index: 2;
+  margin-top: 1rem;
+}
+
+/* Body Content */
+.bodyContent {
+  padding: 2.5rem 1.5rem 1.5rem;
+  background-color: var(--color-white);
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Customer Details Flex Row */
+.customerInfo {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+.infoBlock {
+  display: flex;
+  flex-direction: column;
+}
+
+.infoLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
+}
+
+.infoValue {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* Items List */
+.itemsSection {
+  margin-bottom: 2rem;
+}
+
+.itemsHeader {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  letter-spacing: 0.05em;
+}
+
+.itemRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.itemRow:last-child {
+  border-bottom: none;
+}
+
+.itemDetails {
+  flex: 1;
+  padding-right: 1rem;
+}
+
+.itemDesc {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.itemMeta {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.itemTotal {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* Totals Area */
+.totalsArea {
+  background-color: rgba(205, 226, 164, 0.2); /* very light tint of secondary green */
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.totalLabel {
+  font-weight: 600;
+  color: #475569;
+}
+
+.totalValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.amountInWords {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-style: italic;
+  margin-top: 0.75rem;
+  text-align: right;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 0.75rem;
+}
+
+/* Device Meta */
+.deviceMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  background-color: #f8fafc;
+  padding: 1rem;
+  border-radius: 12px;
+}
+
+.deviceMetaRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.deviceMetaLabel {
+  color: #64748b;
+}
+
+.deviceMetaValue {
+  font-weight: 600;
+  color: #334155;
+  font-family: monospace;
+}
+
+/* Signatures */
+.signatures {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto; /* Pushes signature block to bottom of A4 shape */
+  margin-bottom: 1rem;
+  padding-top: 3rem; /* Provide breathing room from content */
+  border-top: 1px dashed #cbd5e1;
+}
+
+.sigBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 45%;
+}
+
+.sigLine {
+  width: 100%;
+  border-bottom: 1px solid #94a3b8;
+  height: 20px;
+  margin-bottom: 0.5rem;
+}
+
+.sigLabel {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+/* Footer Banner */
+.footerBanner {
+  background-color: #f1f5f9;
+  color: #64748b;
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Mobile specific tweaks */
+@media (max-width: 480px) {
+  .previewWrapper {
+    padding: 1rem 0;
+  }
+  
+  .receiptCard {
+    border-radius: 0;
+    box-shadow: none;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+  }
+}
+
+/* Print specific overrides to enforce A4 explicitly */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  body {
+    background-color: white !important;
+  }
+
+  .previewWrapper {
+    padding: 0 !important;
+    margin: 0 !important;
+    background-color: white !important;
+  }
+
+  .receiptCard {
+    width: 210mm !important;
+    min-width: 210mm !important;
+    max-width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    page-break-after: avoid;
+    page-break-before: avoid;
+  }
+}
