@@ -5,6 +5,7 @@ const PRECACHE_URLS = [
   "/",
   "/index.html",
   "/manifest.json",
+  "/arterieslogo.png",
   "/arterieslogo.svg",
   "/favicon.ico",
   "/apple-touch-icon.png",

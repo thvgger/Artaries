@@ -35,7 +35,7 @@ export default function ReceiptPreview({ data }: ReceiptPreviewProps) {
         <div className={styles.header}>
           <div className={styles.logoArea}>
             <img
-              src="/arterieslogo.svg"
+              src="/arterieslogo.png"
               alt="Artaries Logo"
               className={styles.logoImage}
             />
