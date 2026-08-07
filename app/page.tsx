@@ -1,12 +1,24 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import ReceiptForm from "../components/ReceiptForm";
 import ReceiptPreview from "../components/ReceiptPreview";
 import { ReceiptData } from "../types/receipt";
 import styles from "./page.module.css";
-import { Eye, Edit3, Share2, Download, X, Loader2 } from "lucide-react";
+import {
+  Eye,
+  Edit3,
+  Share2,
+  Download,
+  ChevronDown,
+  Image as ImageIcon,
+  FileText,
+  Check,
+  X,
+  Loader2,
+} from "lucide-react";
 
 const initialData: ReceiptData = {
   name: "",
@@ -21,10 +33,20 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Download and Share formats ("png" | "pdf")
+  const [downloadFormat, setDownloadFormat] = useState<"png" | "pdf">("png");
+  const [shareFormat, setShareFormat] = useState<"png" | "pdf">("png");
+
+  // Dropdown open states
+  const [isDownloadMenuOpen, setIsDownloadMenuOpen] = useState(false);
+  const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
+
+  const downloadWrapperRef = useRef<HTMLDivElement | null>(null);
+  const shareWrapperRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setIsClient(true);
-    // Load saved draft from localStorage
     const saved = localStorage.getItem("artaries_receipt_draft");
     if (saved) {
       try {
@@ -35,7 +57,26 @@ export default function Home() {
     }
   }, []);
 
-  // Persist to localStorage whenever form data updates
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        downloadWrapperRef.current &&
+        !downloadWrapperRef.current.contains(e.target as Node)
+      ) {
+        setIsDownloadMenuOpen(false);
+      }
+      if (
+        shareWrapperRef.current &&
+        !shareWrapperRef.current.contains(e.target as Node)
+      ) {
+        setIsShareMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     if (isClient) {
       localStorage.setItem("artaries_receipt_draft", JSON.stringify(data));
@@ -49,13 +90,19 @@ export default function Home() {
     }
   };
 
-  const handleGenerateReceipt = async (action: "save" | "share" = "save") => {
+  const handleGenerateReceipt = async (
+    actionType: "download" | "share" = "download",
+    formatToUse?: "png" | "pdf"
+  ) => {
     const element = document.getElementById("receipt-capture-area");
     if (!element) return;
 
-    setIsGenerating(true);
+    const format = formatToUse || (actionType === "download" ? downloadFormat : shareFormat);
 
-    // Standard A4 rendering dimensions for sharp PDF/Image output
+    setIsGenerating(true);
+    setIsDownloadMenuOpen(false);
+    setIsShareMenuOpen(false);
+
     const A4_WIDTH_PX = 794;
 
     const originalWidth = element.style.width;
@@ -71,68 +118,137 @@ export default function Home() {
       element.style.borderRadius = "0";
       element.style.boxShadow = "none";
 
+      // Inline SVG images inside capture area to Data URLs for 100% reliable canvas rendering
+      const imgElements = Array.from(element.querySelectorAll("img"));
+      const originalSrcs: { img: HTMLImageElement; src: string }[] = [];
+
+      for (const img of imgElements) {
+        if (img.src && (img.src.endsWith(".svg") || img.src.includes(".svg"))) {
+          try {
+            const resp = await fetch(img.src);
+            const blob = await resp.blob();
+            const dataUrl = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            originalSrcs.push({ img, src: img.src });
+            img.src = dataUrl;
+          } catch (err) {
+            console.warn("Could not inline SVG for canvas export:", err);
+          }
+        }
+      }
+
       await new Promise((resolve) => setTimeout(resolve, 120));
 
       const canvas = await html2canvas(element, {
         scale: 3,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: "#ffffff",
         width: A4_WIDTH_PX,
         height: element.scrollHeight,
       });
 
-      const filename = `ARTARIES_Receipt_${data.name ? data.name.replace(/\s+/g, "_") : "Customer"}.png`;
+      // Restore original image src attributes
+      for (const { img, src } of originalSrcs) {
+        img.src = src;
+      }
 
-      // Convert canvas to Blob for native iOS Web Share API
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/png", 1.0)
-      );
+      const nameSlug = data.name ? data.name.replace(/\s+/g, "_") : "Customer";
+      const pngFilename = `ARTARIES_Receipt_${nameSlug}.png`;
+      const pdfFilename = `ARTARIES_Receipt_${nameSlug}.pdf`;
 
-      if (blob) {
-        const file = new File([blob], filename, { type: "image/png" });
+      // Generate jsPDF instance if format is PDF
+      let pdfObj: jsPDF | null = null;
+      if (format === "pdf") {
+        const imgData = canvas.toDataURL("image/png", 1.0);
+        pdfObj = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "a4",
+        });
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        pdfObj.addImage(imgData, "PNG", 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
+      }
 
-        // Check native Web Share support (iOS Safari & iOS PWA Standalone Mode)
-        const canWebShare =
-          typeof navigator !== "undefined" &&
-          navigator.canShare &&
-          navigator.canShare({ files: [file] });
+      // Action 1: DOWNLOAD
+      if (actionType === "download") {
+        if (format === "pdf" && pdfObj) {
+          pdfObj.save(pdfFilename);
+        } else {
+          const imgData = canvas.toDataURL("image/png", 1.0);
+          const link = document.createElement("a");
+          link.download = pngFilename;
+          link.href = imgData;
 
-        if (canWebShare && action === "share") {
-          try {
-            await navigator.share({
-              title: "Artaries Digital Receipt",
-              text: `Digital Receipt for ${data.name || "Customer"}`,
-              files: [file],
-            });
-            setIsGenerating(false);
-            return;
-          } catch (err: any) {
-            if (err.name === "AbortError") {
-              setIsGenerating(false);
-              return;
-            }
+          const isIOS =
+            /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+          if (!isIOS) {
+            link.click();
+          } else {
+            setModalImage(imgData);
+          }
+        }
+        setIsGenerating(false);
+        return;
+      }
+
+      // Action 2: SHARE
+      if (actionType === "share") {
+        let fileToShare: File | null = null;
+
+        if (format === "pdf" && pdfObj) {
+          const pdfBlob = pdfObj.output("blob");
+          fileToShare = new File([pdfBlob], pdfFilename, { type: "application/pdf" });
+        } else {
+          const blob = await new Promise<Blob | null>((resolve) =>
+            canvas.toBlob(resolve, "image/png", 1.0)
+          );
+          if (blob) {
+            fileToShare = new File([blob], pngFilename, { type: "image/png" });
           }
         }
 
-        // Direct download trigger for Desktop / Android
-        const imgData = canvas.toDataURL("image/png", 1.0);
-        const link = document.createElement("a");
-        link.download = filename;
-        link.href = imgData;
+        if (fileToShare) {
+          const canWebShare =
+            typeof navigator !== "undefined" &&
+            navigator.canShare &&
+            navigator.canShare({ files: [fileToShare] });
 
-        const isIOS =
-          /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+          if (canWebShare) {
+            try {
+              await navigator.share({
+                title: "Artaries Digital Receipt",
+                text: `Digital Receipt for ${data.name || "Customer"}`,
+                files: [fileToShare],
+              });
+              setIsGenerating(false);
+              return;
+            } catch (err: any) {
+              if (err.name === "AbortError") {
+                setIsGenerating(false);
+                return;
+              }
+            }
+          }
 
-        if (!isIOS) {
-          link.click();
-        } else {
-          // On iOS, present the modal preview for seamless touch saving
-          setModalImage(imgData);
+          // Fallback if Web Share is unavailable
+          if (format === "pdf" && pdfObj) {
+            pdfObj.save(pdfFilename);
+          } else {
+            const imgData = canvas.toDataURL("image/png", 1.0);
+            setModalImage(imgData);
+          }
         }
       }
     } catch (error) {
-      console.error("Error generating receipt image:", error);
+      console.error("Error generating receipt:", error);
       alert("Failed to generate receipt. Please try again.");
     } finally {
       element.style.width = originalWidth;
@@ -170,7 +286,7 @@ export default function Home() {
               size={18}
               style={{
                 display: "inline",
-                marginRight: "8px",
+                marginRight: "6px",
                 verticalAlign: "text-bottom",
               }}
             />
@@ -184,7 +300,7 @@ export default function Home() {
               size={18}
               style={{
                 display: "inline",
-                marginRight: "8px",
+                marginRight: "6px",
                 verticalAlign: "text-bottom",
               }}
             />
@@ -219,50 +335,137 @@ export default function Home() {
             </div>
 
             <div className={styles.actionFooter}>
-              <button
-                className="btn btn-secondary"
-                onClick={() => handleGenerateReceipt("save")}
-                disabled={isGenerating}
-              >
-                {isGenerating ? (
-                  <Loader2 size={18} className="animate-spin" style={{ marginRight: "8px" }} />
-                ) : (
-                  <Download size={18} style={{ marginRight: "8px" }} />
-                )}
-                Save Receipt
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => handleGenerateReceipt("share")}
-                disabled={isGenerating}
-              >
-                {isGenerating ? (
-                  <Loader2 size={18} className="animate-spin" style={{ marginRight: "8px" }} />
-                ) : (
-                  <Share2 size={18} style={{ marginRight: "8px" }} />
-                )}
-                Share Receipt
-              </button>
-            </div>
+              {/* 1. Download Split Button with Format Dropdown */}
+              <div className={styles.buttonWrapper} ref={downloadWrapperRef}>
+                <div className={styles.splitBtnGroup}>
+                  <button
+                    className={`btn btn-primary ${styles.mainActionBtn}`}
+                    onClick={() => handleGenerateReceipt("download")}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Download size={16} />
+                    )}
+                    <span>
+                      Save {downloadFormat.toUpperCase()}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.dropdownTriggerBtnPrimary}
+                    onClick={() => {
+                      setIsDownloadMenuOpen(!isDownloadMenuOpen);
+                      setIsShareMenuOpen(false);
+                    }}
+                    title="Choose download format"
+                    disabled={isGenerating}
+                  >
+                    <ChevronDown size={16} />
+                  </button>
+                </div>
 
-            <p
-              style={{
-                textAlign: "center",
-                marginTop: "1rem",
-                fontSize: "0.85rem",
-                color: "#64748b",
-              }}
-            >
-              <em>
-                Tap &quot;Save Receipt&quot; to download a high-quality image
-                you can print or share directly.
-              </em>
-            </p>
+                {isDownloadMenuOpen && (
+                  <div className={styles.dropdownMenu}>
+                    <button
+                      type="button"
+                      className={`${styles.dropdownItem} ${downloadFormat === "png" ? styles.active : ""}`}
+                      onClick={() => {
+                        setDownloadFormat("png");
+                        setIsDownloadMenuOpen(false);
+                      }}
+                    >
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <ImageIcon size={14} /> PNG Image (.png)
+                      </span>
+                      {downloadFormat === "png" && <Check size={14} />}
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.dropdownItem} ${downloadFormat === "pdf" ? styles.active : ""}`}
+                      onClick={() => {
+                        setDownloadFormat("pdf");
+                        setIsDownloadMenuOpen(false);
+                      }}
+                    >
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <FileText size={14} /> PDF Document (.pdf)
+                      </span>
+                      {downloadFormat === "pdf" && <Check size={14} />}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Share Split Button with Format Dropdown */}
+              <div className={styles.buttonWrapper} ref={shareWrapperRef}>
+                <div className={styles.splitBtnGroup}>
+                  <button
+                    className={`btn btn-secondary ${styles.mainActionBtn}`}
+                    onClick={() => handleGenerateReceipt("share")}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Share2 size={16} />
+                    )}
+                    <span>
+                      Share {shareFormat.toUpperCase()}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.dropdownTriggerBtnSecondary}
+                    onClick={() => {
+                      setIsShareMenuOpen(!isShareMenuOpen);
+                      setIsDownloadMenuOpen(false);
+                    }}
+                    title="Choose share format"
+                    disabled={isGenerating}
+                  >
+                    <ChevronDown size={16} />
+                  </button>
+                </div>
+
+                {isShareMenuOpen && (
+                  <div className={styles.dropdownMenu}>
+                    <button
+                      type="button"
+                      className={`${styles.dropdownItem} ${shareFormat === "png" ? styles.active : ""}`}
+                      onClick={() => {
+                        setShareFormat("png");
+                        setIsShareMenuOpen(false);
+                      }}
+                    >
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <ImageIcon size={14} /> PNG Image (.png)
+                      </span>
+                      {shareFormat === "png" && <Check size={14} />}
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.dropdownItem} ${shareFormat === "pdf" ? styles.active : ""}`}
+                      onClick={() => {
+                        setShareFormat("pdf");
+                        setIsShareMenuOpen(false);
+                      }}
+                    >
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <FileText size={14} /> PDF Document (.pdf)
+                      </span>
+                      {shareFormat === "pdf" && <Check size={14} />}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* iOS & Touch Save Modal */}
+      {/* iOS Touch Save Modal */}
       {modalImage && (
         <div
           style={{
@@ -305,7 +508,7 @@ export default function Home() {
               }}
             >
               <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>
-                Receipt Generated
+                Receipt Ready
               </span>
               <button
                 onClick={() => setModalImage(null)}
@@ -346,7 +549,7 @@ export default function Home() {
             >
               <img
                 src={modalImage}
-                alt="Generated Receipt"
+                alt="Generated Receipt PNG"
                 style={{
                   maxWidth: "100%",
                   height: "auto",

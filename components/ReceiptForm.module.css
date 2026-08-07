@@ -1,7 +1,7 @@
 .formContainer {
   background-color: var(--color-surface);
   border-radius: var(--radius-xl);
-  padding: 2rem;
+  padding: 1.75rem;
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--color-border);
   margin-bottom: 2rem;
@@ -109,10 +109,86 @@
   gap: 1rem;
 }
 
+.snImeiGroup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
 .qtyRateGroup {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+
+/* Touch Quantity Stepper */
+.stepperContainer {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  background-color: #ffffff;
+  overflow: hidden;
+  height: 46px;
+}
+
+.stepperBtn {
+  background-color: #f1f5f9;
+  border: none;
+  color: #1e3a5f;
+  width: 44px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.stepperBtn:hover,
+.stepperBtn:active {
+  background-color: #e2e8f0;
+}
+
+.stepperInput {
+  flex: 1;
+  border: none;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.05rem;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  -moz-appearance: textfield;
+}
+
+.stepperInput::-webkit-outer-spin-button,
+.stepperInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Currency Prefix Input */
+.currencyInputWrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.currencyPrefix {
+  position: absolute;
+  left: 14px;
+  font-weight: 800;
+  color: #64748b;
+  font-size: 1.05rem;
+  pointer-events: none;
+}
+
+.currencyInput {
+  padding-left: 32px !important;
+  font-weight: 700;
 }
 
 .amountPreview {
@@ -176,13 +252,87 @@
   color: #ffffff;
 }
 
+/* Digital Signatures Mobile Cards */
+.sigCard {
+  background-color: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sigCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.signedBadge {
+  background-color: #ecfdf5;
+  color: #059669;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sigPreviewBox {
+  width: 100%;
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  border-radius: var(--radius-sm);
+  border: 1px solid #cbd5e1;
+  position: relative;
+  padding: 8px;
+}
+
+.sigImage {
+  max-height: 68px;
+  max-width: 90%;
+  object-fit: contain;
+}
+
+.sigRemoveBtn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: none;
+  border: none;
+  color: #f87171;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: color 0.2s;
+}
+
+.sigRemoveBtn:hover {
+  color: #ef4444;
+}
+
 @media (max-width: 640px) {
   .formContainer {
-    padding: 1.25rem 1rem;
+    padding: 1.1rem 0.85rem;
+    border-radius: var(--radius-lg);
   }
 
   .itemCard {
-    padding: 1rem;
+    padding: 0.9rem;
+  }
+
+  .snImeiGroup {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 
   .qtyRateGroup {
