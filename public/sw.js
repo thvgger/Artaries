@@ -1,31 +1,31 @@
-const CACHE_NAME = "artaries-receipt-v2";
+const CACHE_NAME = "artaries-receipt-v3";
 
 // Core static assets required for the app shell to function offline
 const PRECACHE_URLS = [
   "/",
-  "/index.html",
   "/manifest.json",
   "/artarieslogo.png",
   "/favicon.ico",
   "/apple-touch-icon.png",
-  "/apple-touch-icon-precomposed.png",
-  "/apple-touch-icon-120x120.png",
-  "/apple-touch-icon-120x120-precomposed.png"
 ];
 
-// Install event: Pre-cache core shell assets & skip waiting
+// Install event: Pre-cache shell assets individually so single 404s never break install
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_URLS).catch((err) => {
-        console.warn("Some precache assets failed to load, proceeding anyway:", err);
-      });
+    caches.open(CACHE_NAME).then(async (cache) => {
+      for (const url of PRECACHE_URLS) {
+        try {
+          await cache.add(url);
+        } catch (err) {
+          console.warn(`[SW] Precache failed for ${url}:`, err);
+        }
+      }
     })
   );
   self.skipWaiting();
 });
 
-// Activate event: Clean up stale caches & claim clients immediately
+// Activate event: Clean up old caches & claim clients immediately
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -39,73 +39,68 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch event: Comprehensive offline caching strategy for iOS Safari & Standalone PWA
+// Fetch event: 100% robust offline handler for iOS Safari & Standalone PWA
 self.addEventListener("fetch", (event) => {
   const request = event.request;
 
-  // Only handle GET requests
+  // Only intercept GET requests
   if (request.method !== "GET") return;
 
-  // Ignore non-http/https requests (e.g. chrome-extension://, data:, blob:)
+  // Ignore non-http/https requests (e.g. data:, blob:, chrome-extension://)
   if (!request.url.startsWith("http://") && !request.url.startsWith("https://")) {
     return;
   }
 
-  const url = new URL(request.url);
-
-  // Strategy 1: HTML Navigation requests (pages)
-  // Network first -> fallback to Cache -> fallback to cached "/"
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseToCache);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) return cachedResponse;
-            return caches.match("/");
-          });
-        })
-    );
-    return;
-  }
-
-  // Strategy 2: Next.js static assets (_next/static/...), images, fonts, and local scripts
-  // Cache First -> Network update in background (Stale-While-Revalidate)
+  // Use async IIFE to ALWAYS return a valid Response object (prevents iOS respondWith error)
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request)
-        .then((networkResponse) => {
-          if (
-            networkResponse &&
-            networkResponse.status === 200 &&
-            networkResponse.type !== "opaque"
-          ) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseToCache);
-            });
+    (async () => {
+      try {
+        // 1. Check cache first for instant offline response
+        const cachedResponse = await caches.match(request);
+        if (cachedResponse) {
+          // Update cache in background when online (Stale-While-Revalidate)
+          if (navigator.onLine) {
+            fetch(request)
+              .then(async (networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                  const cache = await caches.open(CACHE_NAME);
+                  cache.put(request, networkResponse);
+                }
+              })
+              .catch(() => {});
           }
-          return networkResponse;
-        })
-        .catch((err) => {
-          // Silent catch for network failures when offline
-          return null;
-        });
+          return cachedResponse;
+        }
 
-      // Return cached version immediately if available, otherwise wait for network
-      return cachedResponse || fetchPromise.then((netResp) => {
-        if (netResp) return netResp;
-        // Fallback response if both cache and network fail
-        return new Response("Offline", { status: 503, statusText: "Offline" });
-      });
-    })
+        // 2. Fetch from network if not in cache
+        const networkResponse = await fetch(request);
+        if (
+          networkResponse &&
+          networkResponse.status === 200 &&
+          networkResponse.type !== "opaque"
+        ) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(request, networkResponse.clone());
+        }
+        return networkResponse;
+      } catch (error) {
+        // 3. Network failed (Offline mode)
+        // For HTML navigation requests, return cached "/"
+        if (request.mode === "navigate") {
+          const cache = await caches.open(CACHE_NAME);
+          const rootFallback = await cache.match("/");
+          if (rootFallback) return rootFallback;
+        }
+
+        // 4. Ultimate Fallback: MUST return a valid Response object (NEVER undefined!)
+        return new Response(
+          "<!DOCTYPE html><html><body style='font-family:sans-serif;text-align:center;padding:2rem;'><h2>You are offline</h2><p>Please check your connection or reopen saved app.</p></body></html>",
+          {
+            status: 200,
+            headers: new Headers({ "Content-Type": "text/html" }),
+          }
+        );
+      }
+    })()
   );
 });

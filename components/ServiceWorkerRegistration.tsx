@@ -15,6 +15,7 @@ export default function ServiceWorkerRegistration() {
           .register("/sw.js", { scope: "/" })
           .then((registration) => {
             console.log("Service Worker registered with scope:", registration.scope);
+            registration.update();
             
             // Check for service worker updates periodically
             registration.onupdatefound = () => {
