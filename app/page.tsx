@@ -271,8 +271,8 @@ export default function Home() {
             alt="Artaries Logo"
             className={styles.headerLogo}
           />
-          <h1>ARTARIES RECEIPT GENERATOR</h1>
-          <span className={styles.badge}>OFFLINE READY</span>
+          <h1>ARTARIES RECEIPT</h1>
+          
         </div>
       </header>
 
