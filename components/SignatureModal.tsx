@@ -16,10 +16,30 @@ export default function SignatureModal({
   onClose,
 }: SignatureModalProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
   const [mode, setMode] = useState<"draw" | "type">("draw");
   const [typedName, setTypedName] = useState("");
+
+  useEffect(() => {
+    // Lock body scroll on mobile to prevent background scrolling
+    const originalOverflow = document.body.style.overflow;
+    const originalTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    // Focus modal container and scroll into view smoothly on mobile
+    if (modalRef.current) {
+      modalRef.current.focus();
+      modalRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.touchAction = originalTouchAction;
+    };
+  }, []);
 
   useEffect(() => {
     if (mode === "draw" && canvasRef.current) {
@@ -114,7 +134,6 @@ export default function SignatureModal({
         alert("Please type your name for signature.");
         return;
       }
-      // Render typed text to a canvas to generate a signature image
       const canvas = document.createElement("canvas");
       canvas.width = 400;
       canvas.height = 120;
@@ -132,7 +151,11 @@ export default function SignatureModal({
 
   return (
     <div className={styles.overlay}>
-      <div className={styles.modal}>
+      <div
+        className={styles.modal}
+        ref={modalRef}
+        tabIndex={-1}
+      >
         <div className={styles.header}>
           <span className={styles.title}>
             <Edit3 size={18} /> {title}

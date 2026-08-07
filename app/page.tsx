@@ -267,7 +267,7 @@ export default function Home() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <img
-            src="/arterieslogo.png"
+            src="/artarieslogo.png"
             alt="Artaries Logo"
             className={styles.headerLogo}
           />
