@@ -142,10 +142,38 @@ export default function ReceiptPreview({ data }: ReceiptPreviewProps) {
           {/* Signatures */}
           <div className={styles.signatures}>
             <div className={styles.sigBlock}>
+              {data.customerSignature ? (
+                <img
+                  src={data.customerSignature}
+                  alt="Customer Signature"
+                  style={{
+                    height: "40px",
+                    maxWidth: "100%",
+                    objectFit: "contain",
+                    marginBottom: "-8px",
+                  }}
+                />
+              ) : (
+                <div style={{ height: "32px" }} />
+              )}
               <div className={styles.sigLine}></div>
               <span className={styles.sigLabel}>Customer</span>
             </div>
             <div className={styles.sigBlock}>
+              {data.managerSignature ? (
+                <img
+                  src={data.managerSignature}
+                  alt="Manager Signature"
+                  style={{
+                    height: "40px",
+                    maxWidth: "100%",
+                    objectFit: "contain",
+                    marginBottom: "-8px",
+                  }}
+                />
+              ) : (
+                <div style={{ height: "32px" }} />
+              )}
               <div className={styles.sigLine}></div>
               <span className={styles.sigLabel}>Manager</span>
             </div>

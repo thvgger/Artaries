@@ -1,0 +1,168 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal {
+  background-color: #ffffff;
+  border-radius: var(--radius-lg);
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  animation: fadeIn 0.25s ease forwards;
+}
+
+.header {
+  padding: 16px 20px;
+  background-color: #1e3a5f;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.closeBtn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: #f8fafc;
+}
+
+.tabs {
+  display: flex;
+  background-color: #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 3px;
+}
+
+.tabBtn {
+  flex: 1;
+  padding: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tabBtn.active {
+  background-color: #ffffff;
+  color: #1e3a5f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.canvasContainer {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background-color: #ffffff;
+  border: 2px dashed #cbd5e1;
+  border-radius: var(--radius-md);
+  touch-action: none;
+  cursor: crosshair;
+  overflow: hidden;
+}
+
+.canvasContainer:focus-within,
+.canvasContainer:hover {
+  border-color: #1e3a5f;
+}
+
+.canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.guideLine {
+  position: absolute;
+  bottom: 40px;
+  left: 10%;
+  right: 10%;
+  border-bottom: 1.5px dashed #cbd5e1;
+  pointer-events: none;
+}
+
+.guideText {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #94a3b8;
+  font-size: 0.85rem;
+  pointer-events: none;
+  font-style: italic;
+}
+
+.typeInput {
+  width: 100%;
+  padding: 12px;
+  font-size: 1.5rem;
+  font-family: 'Brush Script MT', cursive, sans-serif;
+  border: 2px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  outline: none;
+  text-align: center;
+}
+
+.typeInput:focus {
+  border-color: #1e3a5f;
+}
+
+.footer {
+  padding: 16px 20px;
+  background-color: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.actionGroup {
+  display: flex;
+  gap: 8px;
+}

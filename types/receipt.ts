@@ -8,8 +8,12 @@ export interface ReceiptItem {
 }
 
 export interface ReceiptData {
+  receiptNo?: string;
   name: string;
   phone: string;
   date: string;
+  paymentMethod?: string;
   items: ReceiptItem[];
+  customerSignature?: string;
+  managerSignature?: string;
 }

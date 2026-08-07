@@ -1,96 +1,111 @@
-const CACHE_NAME = "artaries-receipt-v1";
+const CACHE_NAME = "artaries-receipt-v2";
 
-// Assets to pre-cache for full offline support
-const PRECACHE_URLS = ["/", "/manifest.json", "/arterieslogo.svg"];
+// Core static assets required for the app shell to function offline
+const PRECACHE_URLS = [
+  "/",
+  "/index.html",
+  "/manifest.json",
+  "/arterieslogo.svg",
+  "/favicon.ico",
+  "/apple-touch-icon.png",
+  "/apple-touch-icon-precomposed.png",
+  "/apple-touch-icon-120x120.png",
+  "/apple-touch-icon-120x120-precomposed.png"
+];
 
-// Install event: pre-cache essential assets
+// Install event: Pre-cache core shell assets & skip waiting
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_URLS);
-    }),
+      return cache.addAll(PRECACHE_URLS).catch((err) => {
+        console.warn("Some precache assets failed to load, proceeding anyway:", err);
+      });
+    })
   );
-  // Activate immediately without waiting
   self.skipWaiting();
 });
 
-// Activate event: clean up old caches
+// Activate event: Clean up stale caches & claim clients immediately
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name)),
+          .map((name) => caches.delete(name))
       );
-    }),
+    })
   );
-  // Take control of all pages immediately
   self.clients.claim();
 });
 
-// Fetch event: serve from cache first, fall back to network, then cache the response
+// Fetch event: Comprehensive offline caching strategy for iOS Safari & Standalone PWA
 self.addEventListener("fetch", (event) => {
-  // Bypass service worker interception completely for localhost/HTTP development
-  // to avoid iOS "HTTPS-only" navigation errors
-  if (
-    self.location.hostname === "localhost" ||
-    self.location.hostname === "127.0.0.1"
-  ) {
+  const request = event.request;
+
+  // Only handle GET requests
+  if (request.method !== "GET") return;
+
+  // Ignore non-http/https requests (e.g. chrome-extension://, data:, blob:)
+  if (!request.url.startsWith("http://") && !request.url.startsWith("https://")) {
     return;
   }
 
-  // Skip non-GET requests
-  if (event.request.method !== "GET") return;
+  const url = new URL(request.url);
 
-  // Skip chrome-extension and other non-http requests
-  if (!event.request.url.startsWith("http")) return;
-
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Return cached version, but also update cache in background
-        event.waitUntil(
-          fetch(event.request)
-            .then((networkResponse) => {
-              if (networkResponse && networkResponse.status === 200) {
-                caches.open(CACHE_NAME).then((cache) => {
-                  cache.put(event.request, networkResponse);
-                });
-              }
-            })
-            .catch(() => {
-              // Network failed, that's fine - we already have cached version
-            }),
-        );
-        return cachedResponse;
-      }
-
-      // Not in cache, fetch from network and cache the result
-      return fetch(event.request)
+  // Strategy 1: HTML Navigation requests (pages)
+  // Network first -> fallback to Cache -> fallback to cached "/"
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request)
         .then((networkResponse) => {
-          if (
-            !networkResponse ||
-            networkResponse.status !== 200 ||
-            networkResponse.type === "opaque"
-          ) {
-            return networkResponse;
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
           }
-
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-
           return networkResponse;
         })
         .catch(() => {
-          // Offline and not in cache - return a simple fallback for navigation
-          if (event.request.mode === "navigate") {
+          return caches.match(request).then((cachedResponse) => {
+            if (cachedResponse) return cachedResponse;
             return caches.match("/");
+          });
+        })
+    );
+    return;
+  }
+
+  // Strategy 2: Next.js static assets (_next/static/...), images, fonts, and local scripts
+  // Cache First -> Network update in background (Stale-While-Revalidate)
+  event.respondWith(
+    caches.match(request).then((cachedResponse) => {
+      const fetchPromise = fetch(request)
+        .then((networkResponse) => {
+          if (
+            networkResponse &&
+            networkResponse.status === 200 &&
+            networkResponse.type !== "opaque"
+          ) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
           }
-          return new Response("Offline", { status: 503 });
+          return networkResponse;
+        })
+        .catch((err) => {
+          // Silent catch for network failures when offline
+          return null;
         });
-    }),
+
+      // Return cached version immediately if available, otherwise wait for network
+      return cachedResponse || fetchPromise.then((netResp) => {
+        if (netResp) return netResp;
+        // Fallback response if both cache and network fail
+        return new Response("Offline", { status: 503, statusText: "Offline" });
+      });
+    })
   );
 });
