@@ -94,12 +94,10 @@ export default function ServiceWorkerRegistration() {
       {isOffline ? (
         <>
           <WifiOff size={16} style={{ color: "#f87171" }} />
-          <span>Offline Mode &bull; Generating receipts locally</span>
         </>
       ) : (
         <>
           <Wifi size={16} style={{ color: "#4ade80" }} />
-          <span>Back Online</span>
         </>
       )}
     </div>
